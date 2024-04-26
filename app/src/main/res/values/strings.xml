@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">AlarmTrial</string>
+    <string name="alarm_set_outline">Alarm set outline</string>
+    <string name="header_text">Snorlabs Kotlin Trial</string>
+</resources>
