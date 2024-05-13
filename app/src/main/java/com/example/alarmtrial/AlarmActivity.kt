@@ -54,9 +54,7 @@ fun AlarmContent(activity: ComponentActivity) {
             // Snooze Alarm
             Button(
                 onClick = {
-
                     snoozeAlarm(activity)
-
                 })
             {
                 Text(text = "Snooze")
@@ -75,9 +73,7 @@ fun AlarmContent(activity: ComponentActivity) {
             {
                 Text(text = "Go Home")
             }
-
         }
-
     }
 }
 

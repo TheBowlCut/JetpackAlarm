@@ -1,11 +1,15 @@
 package com.example.alarmtrial
 
+import android.Manifest
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.app.TimePickerDialog
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
@@ -46,6 +50,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -250,6 +256,17 @@ fun AlarmScreen(
             if(!alarmSet){
                 Button(
                     onClick = {
+                        // First check if permission is granted fpr Activity Recognition
+                        // Check permissions class needs to extend to activity recognition.
+                        // 1) Press button
+                        // 2) Check is permission given
+                        // 3) If yes, carry on
+                        // 4) If no, go to new activity (Needs to be new activity so user can
+                        // select accept or decline. Otherwise if user declines it will
+                        // still allow to to set alarm
+                        // Set up similar to AlarmActivity
+                        permissionChecker(activity)
+
                         // Show a TimePickerDialog when the button is clicked
                         // Int, Int -> selectTime passes the user selected hour, minute as
                         // arguments into pickedTime
@@ -360,6 +377,25 @@ fun cancelAlarm (context: Context){
 
     alarmManager.cancel(alarmPendingintent)
 
+}
+
+fun permissionChecker(activity: ComponentActivity) {
+    if(ContextCompat.checkSelfPermission
+            (activity, Manifest.permission.ACTIVITY_RECOGNITION)
+        == PackageManager.PERMISSION_GRANTED
+    ) {
+        Toast.makeText(activity, "Permission Given", Toast.LENGTH_LONG).show()
+
+    } else {
+        Toast.makeText(activity, "Permission NOT GIVEN", Toast.LENGTH_LONG).show()
+        //Opens up the cancel alarm activity for user. Service remains until closed.
+        val permissionIntent = Intent(activity
+            , PermissionChecker::class.java)
+            .apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        activity.startActivity(permissionIntent)
+    }
 }
 
 // View Model to store the user selected time.
