@@ -2,16 +2,20 @@ package com.example.alarmtrial
 
 import android.Manifest
 import android.app.AlarmManager
+import android.app.AlertDialog
+import android.app.Dialog
 import android.app.PendingIntent
 import android.app.TimePickerDialog
 import android.content.Context
+import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
+import android.provider.Settings
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -50,8 +54,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -63,7 +67,7 @@ import java.time.LocalTime
 import java.util.Calendar
 
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -77,7 +81,7 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AlarmTrialLayout(activity: ComponentActivity) {
+fun AlarmTrialLayout(activity: AppCompatActivity) {
 
     val navController = rememberNavController()
 
@@ -182,7 +186,7 @@ fun AlarmTrialLayout(activity: ComponentActivity) {
 }
 
 @Composable
-fun AlarmNavigation(navController:NavHostController, activity: ComponentActivity){
+fun AlarmNavigation(navController:NavHostController, activity: AppCompatActivity){
 
     // Navigation controller function - allows bottom nav functionality
 
@@ -215,7 +219,7 @@ fun AlarmNavigation(navController:NavHostController, activity: ComponentActivity
 
 @Composable
 fun AlarmScreen(
-    activity: ComponentActivity,
+    activity: AppCompatActivity,
     alarmSet: Boolean,
     onButtonClick: () -> Unit,
     alarmViewModel: AlarmViewModel
@@ -248,7 +252,6 @@ fun AlarmScreen(
                 Text(text = "No Alarm Set")
             }
 
-
             //Spacer to push the button to bottom of screen
             Spacer(modifier = Modifier
                 .weight(1.0f))
@@ -257,15 +260,8 @@ fun AlarmScreen(
                 Button(
                     onClick = {
                         // First check if permission is granted fpr Activity Recognition
-                        // Check permissions class needs to extend to activity recognition.
-                        // 1) Press button
-                        // 2) Check is permission given
-                        // 3) If yes, carry on
-                        // 4) If no, go to new activity (Needs to be new activity so user can
-                        // select accept or decline. Otherwise if user declines it will
-                        // still allow to to set alarm
-                        // Set up similar to AlarmActivity
                         permissionChecker(activity)
+                        powerModeCheck(activity)
 
                         // Show a TimePickerDialog when the button is clicked
                         // Int, Int -> selectTime passes the user selected hour, minute as
@@ -341,7 +337,7 @@ fun HeaderComponent() {
         })
 }
 
-fun ShowTimePickerDialog(activity: ComponentActivity, callback: (Int, Int) -> Unit) {
+fun ShowTimePickerDialog(activity: AppCompatActivity, callback: (Int, Int) -> Unit) {
     val calendar = Calendar.getInstance()
     val hourOfDay = calendar.get(Calendar.HOUR_OF_DAY)
     val minute = calendar.get(Calendar.MINUTE)
@@ -379,7 +375,7 @@ fun cancelAlarm (context: Context){
 
 }
 
-fun permissionChecker(activity: ComponentActivity) {
+fun permissionChecker(activity: AppCompatActivity) {
     if(ContextCompat.checkSelfPermission
             (activity, Manifest.permission.ACTIVITY_RECOGNITION)
         == PackageManager.PERMISSION_GRANTED
@@ -398,9 +394,41 @@ fun permissionChecker(activity: ComponentActivity) {
     }
 }
 
+fun powerModeCheck(activity: AppCompatActivity) {
+    val powerManager = activity.getSystemService(Context.POWER_SERVICE) as PowerManager?
+    val powerSaveMode = powerManager?.isPowerSaveMode ?: false
+
+    if(powerSaveMode){
+        val dialogFragment = PowerDialogFragment()
+        dialogFragment.show(activity.supportFragmentManager, "PowerDialogFragment")
+    }
+}
+
+class PowerDialogFragment : DialogFragment() {
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+        // Use the Builder class for convenient dialog construction
+        val builder = AlertDialog.Builder(requireActivity())
+        builder.setMessage(getString(R.string.powerSavingString))
+            .setPositiveButton(
+                getString(R.string.go_to_settings)
+            ) { dialog, id -> // ACTION_BATTERY_SAVER_SETTINGS - send user to power saving mode
+                val intent = Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS)
+                startActivity(intent)
+            }
+            .setNegativeButton(getString(R.string.cancelPowerSaving)) { dialog, id ->
+                val powerSaveCancelIntent = Intent(context, MainActivity::class.java)
+                startActivity(powerSaveCancelIntent)
+            }
+        // Create the AlertDialog object and return it
+        return builder.create()
+    }
+}
+
 // View Model to store the user selected time.
 class AlarmViewModel : ViewModel() {
     var pickedTime: String by mutableStateOf(LocalTime.NOON.toString())
 }
+
+
 
 
