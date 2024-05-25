@@ -61,9 +61,12 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.12.0")
+    implementation("androidx.compose.material:material:1.6.7")
+    implementation("androidx.compose.material3:material3:1.2.1")
 
     // Play services library required for activity recognition.
     implementation("com.google.android.gms:play-services-location:21.2.0")
+
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
@@ -74,7 +77,6 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 
     implementation("androidx.navigation:navigation-compose:2.7.7")
-    implementation ("androidx.compose.material:material:1.6.3")
 
     testImplementation("org.mockito.kotlin:mockito-kotlin:4.1.0")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")

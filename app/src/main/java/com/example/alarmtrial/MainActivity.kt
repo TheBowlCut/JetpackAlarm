@@ -13,6 +13,7 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
+import android.widget.TimePicker
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
@@ -41,6 +42,8 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimePickerState
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -127,9 +130,9 @@ fun AlarmTrialLayout(activity: AppCompatActivity) {
 
     Scaffold(
        
-        topBar = {
-            HeaderComponent()
-        },
+        //topBar = {
+        //    HeaderComponent()
+        //},
 
         bottomBar = {
             NavigationBar(
@@ -217,6 +220,7 @@ fun AlarmNavigation(navController:NavHostController, activity: AppCompatActivity
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlarmScreen(
     activity: AppCompatActivity,
@@ -225,17 +229,25 @@ fun AlarmScreen(
     alarmViewModel: AlarmViewModel
 ) {
 
+    val currentTime = Calendar.getInstance()
     // Retrieve the selected time from the ViewModel
     // This captures the user selected time and keeps in place through recomposition
-
     var pickedTime by remember {
         alarmViewModel::pickedTime
     }
 
+    val timePickerState = remember {
+        TimePickerState(
+            is24Hour = true,
+            initialHour = currentTime.get(Calendar.HOUR_OF_DAY),
+            initialMinute = currentTime.get(Calendar.MINUTE)
+        )
+    }
+
     Box(modifier = Modifier
-        .padding(16.dp)
+        .padding(8.dp)
         .fillMaxSize()
-        .padding(horizontal = 16.dp)
+        .padding(horizontal = 8.dp)
         .navigationBarsPadding()
         , contentAlignment = Alignment.TopCenter
     ) {
@@ -247,10 +259,19 @@ fun AlarmScreen(
             Spacer(modifier = Modifier.padding(8.dp))
 
             if (alarmSet) {
-                Text(text = "Selected Time $pickedTime")
+                Text(
+                    text = "Selected Time $pickedTime",
+                    style = MaterialTheme.typography.headlineMedium)
             } else {
-                Text(text = "No Alarm Set")
+                Text(text = "No Alarm Set",
+                    style = MaterialTheme.typography.headlineMedium)
             }
+
+            Spacer(modifier = Modifier.padding(8.dp))
+
+            TimePicker(
+                state = timePickerState
+            )
 
             //Spacer to push the button to bottom of screen
             Spacer(modifier = Modifier
@@ -263,15 +284,13 @@ fun AlarmScreen(
                         permissionChecker(activity)
                         powerModeCheck(activity)
 
-                        // Show a TimePickerDialog when the button is clicked
-                        // Int, Int -> selectTime passes the user selected hour, minute as
-                        // arguments into pickedTime
-                        ShowTimePickerDialog(activity) { hour, minute ->
-                            pickedTime = "%02d:%02d".format(hour, minute)
-                            onButtonClick()
-                            // Sends user selected time to AlarmSetter.kt
-                            setAlarm(activity, hour, minute)
-                        }
+                        val hour = timePickerState.hour
+                        val minute = timePickerState.minute
+
+                        pickedTime = "%02d:%02d".format(hour, minute)
+                        onButtonClick()
+                        setAlarm(activity, hour, minute)
+
                     },
                     modifier = Modifier
                         .padding(vertical = 16.dp)
@@ -327,13 +346,13 @@ fun SettingsScreen() {
 @Composable
 fun HeaderComponent() {
     TopAppBar(
-        modifier = Modifier.padding(8.dp),
+        modifier = Modifier.padding(0.dp),
         title = {
             Text(
                 text = stringResource(R.string.header_text),
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
-                style = MaterialTheme.typography.headlineLarge)
+                style = MaterialTheme.typography.headlineSmall)
         })
 }
 
