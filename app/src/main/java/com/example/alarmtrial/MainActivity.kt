@@ -13,17 +13,29 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
+import android.util.Log
 import android.widget.TimePicker
 import android.widget.Toast
 import androidx.activity.compose.setContent
+import androidx.compose.material.DropdownMenuItem
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
@@ -35,11 +47,13 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TimePicker
@@ -49,14 +63,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.Center
+import androidx.compose.ui.Alignment.Companion.TopCenter
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.ViewModel
@@ -68,6 +87,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.alarmtrial.ui.theme.AlarmTrialTheme
 import java.time.LocalTime
 import java.util.Calendar
+import java.util.Locale
 
 
 class MainActivity : AppCompatActivity() {
@@ -192,21 +212,22 @@ fun AlarmTrialLayout(activity: AppCompatActivity) {
 fun AlarmNavigation(navController:NavHostController, activity: AppCompatActivity){
 
     // Navigation controller function - allows bottom nav functionality
-
-    var alarmSet by rememberSaveable {
-        mutableStateOf(false)
-    }
-
-    // Retrieve or create the ChatViewModel
+    // Retrieve or create the AlarmViewModel and booleanViewModel to save alarm
     val alarmViewModel: AlarmViewModel = viewModel()
+    val regBoolViewModel: ABoolViewModel = viewModel()
+
+    // Retrieve or create the DynamicViewModel and booleanViewModel to save alarm
+    val dynViewModel: DynamicViewModel = viewModel()
+    val dynBoolViewModel: DBoolViewModel = viewModel()
 
     NavHost(navController = navController, startDestination = "alarm"){
         // Whatever goes in here will be considered the home screen
         composable("alarm") {
             AlarmScreen(activity = activity,
-                alarmSet = alarmSet,
-                onButtonClick = {alarmSet = !alarmSet},
-                alarmViewModel
+                alarmViewModel,
+                regBoolViewModel,
+                dynViewModel,
+                dynBoolViewModel
             )
         }
 
@@ -220,21 +241,88 @@ fun AlarmNavigation(navController:NavHostController, activity: AppCompatActivity
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@Composable
+fun AlarmScreen(activity: AppCompatActivity,
+                alarmViewModel: AlarmViewModel,
+                regBoolViewModel: ABoolViewModel,
+                dynamicViewModel: DynamicViewModel,
+                dynBoolViewModeel: DBoolViewModel
+    ){
+
+    val pagerState = rememberPagerState(pageCount = { 3 })
+    val scope = rememberCoroutineScope()
+
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        // HorizontalPager for the settings screens
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 32.dp) // Adjust padding to ensure space for indicators
+        ) { page ->
+            when (page) {
+                0 -> RegularAlarmScreen(
+                    activity = activity,
+                    alarmViewModel,
+                    regBoolViewModel
+                )
+
+                1 -> DynamicAlarmScreen(
+                    dynamicViewModel,
+                    dynBoolViewModeel
+                )
+
+                2 -> SleepScreen()
+            }
+        }
+
+        // Page indicators
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 32.dp), // Padding to position the indicators above the navigation bar
+            horizontalArrangement = Arrangement.Center
+        ) {
+            repeat(3) { index ->
+                val color = if (pagerState.currentPage == index) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    Color.Gray
+                }
+                Spacer(modifier = Modifier.size(8.dp)) // Spacer to create space between indicators
+                Box(
+                    modifier = Modifier
+                        .size(16.dp)
+                        .clip(CircleShape)
+                        .background(color)
+                )
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AlarmScreen(
+fun RegularAlarmScreen(
     activity: AppCompatActivity,
-    alarmSet: Boolean,
-    onButtonClick: () -> Unit,
-    alarmViewModel: AlarmViewModel
+    alarmViewModel: AlarmViewModel,
+    regBoolViewModel: ABoolViewModel
 ) {
 
     val currentTime = Calendar.getInstance()
     // Retrieve the selected time from the ViewModel
     // This captures the user selected time and keeps in place through recomposition
-    var pickedTime by remember {
-        alarmViewModel::pickedTime
+    var regAlarmTime by remember {
+        alarmViewModel::regAlarmTime
     }
+
+    var regAlarmSet by remember {
+        regBoolViewModel::regAlarmSet
+    }
+
 
     val timePickerState = remember {
         TimePickerState(
@@ -247,9 +335,8 @@ fun AlarmScreen(
     Box(modifier = Modifier
         .padding(8.dp)
         .fillMaxSize()
-        .padding(horizontal = 8.dp)
         .navigationBarsPadding()
-        , contentAlignment = Alignment.TopCenter
+        , contentAlignment = TopCenter
     ) {
         Column(
             horizontalAlignment =
@@ -258,9 +345,9 @@ fun AlarmScreen(
 
             Spacer(modifier = Modifier.padding(8.dp))
 
-            if (alarmSet) {
+            if (regAlarmSet) {
                 Text(
-                    text = "Selected Time $pickedTime",
+                    text = "Selected Time $regAlarmTime",
                     style = MaterialTheme.typography.headlineMedium)
             } else {
                 Text(text = "No Alarm Set",
@@ -269,15 +356,21 @@ fun AlarmScreen(
 
             Spacer(modifier = Modifier.padding(8.dp))
 
-            TimePicker(
-                state = timePickerState
-            )
+            // Use Modifier.weight to let TimePicker take available space
+            Box(
+                modifier = Modifier
+                    .weight(3f)
+            ) {
+                TimePicker(
+                    state = timePickerState
+                )
+            }
 
             //Spacer to push the button to bottom of screen
             Spacer(modifier = Modifier
-                .weight(1.0f))
+                .weight(0.25f))
 
-            if(!alarmSet){
+            if(!regAlarmSet){
                 Button(
                     onClick = {
                         // First check if permission is granted fpr Activity Recognition
@@ -287,13 +380,13 @@ fun AlarmScreen(
                         val hour = timePickerState.hour
                         val minute = timePickerState.minute
 
-                        pickedTime = "%02d:%02d".format(hour, minute)
-                        onButtonClick()
+                        regAlarmTime = "%02d:%02d".format(hour, minute)
+                        regAlarmSet = !regAlarmSet
                         setAlarm(activity, hour, minute)
 
                     },
                     modifier = Modifier
-                        .padding(vertical = 16.dp)
+                        .padding(vertical = 24.dp)
                         .fillMaxWidth()
 
                 ) {
@@ -303,14 +396,14 @@ fun AlarmScreen(
 
             // Cancel Alarm - if alarm is set, alarmSet Bool is true, so button functionality
             // is only to cancel.
-            if (alarmSet){
+            if (regAlarmSet){
                 Button(
                     onClick = {
                         cancelAlarm(activity)
-                        onButtonClick()
+                        regAlarmSet = !regAlarmSet
                     },
                     modifier = Modifier
-                        .padding(vertical = 16.dp)
+                        .padding(vertical = 24.dp)
                         .fillMaxWidth()
 
                 ) {
@@ -321,6 +414,106 @@ fun AlarmScreen(
     }
 }
 
+@Composable
+fun DynamicAlarmScreen(
+    dynViewModel: DynamicViewModel,
+    dynBoolViewModel: DBoolViewModel
+) {
+
+    var hour by remember { mutableStateOf(8) }
+    var minute by remember { mutableStateOf(0) }
+
+    //This captures the user selected time and keeps in place through recomposition
+    var selectedCntDown by remember {
+        dynViewModel::dynAlarmTime
+    }
+
+    var dynAlarmSet by remember {
+        dynBoolViewModel::dynAlarmSet
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(8.dp)
+            .navigationBarsPadding()
+        , verticalArrangement = Arrangement.Top
+        , horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+
+        Spacer(modifier = Modifier.padding(8.dp))
+
+        if (dynAlarmSet){
+            Text(
+                text = "Sleep Timer: $selectedCntDown",
+                style = MaterialTheme.typography.headlineMedium
+            )
+        } else {
+            Text(
+                text = "No Alarm Set",
+                style = MaterialTheme.typography.headlineMedium
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .weight(1f)
+            , contentAlignment = Center
+        ) {
+            DynAlarmPicker(
+                hour = hour,
+                minute = minute,
+                onTimeChange = { newHour, newMinute ->
+                    hour = newHour
+                    minute = newMinute
+                }
+            )
+        }
+
+        Spacer(modifier = Modifier
+            .height(8.dp))
+
+        if(!dynAlarmSet) {
+            Button(
+                onClick = {
+                    selectedCntDown = String.format("%02d:%02d", hour, minute)
+                    // convertToMilli(hour, minute)
+                    // startCountdown(hour, minute)
+                    dynAlarmSet = !dynAlarmSet
+                },
+                modifier = Modifier
+                    .padding(vertical = 24.dp)
+                    .fillMaxWidth()
+            ) {
+                Text(text = "Set Time")
+            }
+        }
+
+        if(dynAlarmSet){
+            Button(
+                onClick = {
+                    dynAlarmSet = !dynAlarmSet
+                },
+                modifier = Modifier
+                    .padding(vertical = 24.dp)
+                    .fillMaxWidth()
+            ) {
+                Text(text = "Cancel Timer")
+            }
+
+        }
+    }
+}
+
+@Composable
+fun SleepScreen() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text = "Sleep Alarm")
+    }
+}
 
 @Composable
 fun AnalysisScreen() {
@@ -340,37 +533,6 @@ fun SettingsScreen() {
     ) {
         Text(text = "User Settings Coming Soon")
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun HeaderComponent() {
-    TopAppBar(
-        modifier = Modifier.padding(0.dp),
-        title = {
-            Text(
-                text = stringResource(R.string.header_text),
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-                style = MaterialTheme.typography.headlineSmall)
-        })
-}
-
-fun ShowTimePickerDialog(activity: AppCompatActivity, callback: (Int, Int) -> Unit) {
-    val calendar = Calendar.getInstance()
-    val hourOfDay = calendar.get(Calendar.HOUR_OF_DAY)
-    val minute = calendar.get(Calendar.MINUTE)
-
-    // Create and show the TimePickerDialog
-    TimePickerDialog(
-        activity,
-        { _, hour, min ->
-            callback(hour, min)
-        },
-        hourOfDay,
-        minute,
-        true
-    ).show()
 }
 
 //Cancel alarm
@@ -443,11 +605,86 @@ class PowerDialogFragment : DialogFragment() {
     }
 }
 
-// View Model to store the user selected time.
-class AlarmViewModel : ViewModel() {
-    var pickedTime: String by mutableStateOf(LocalTime.NOON.toString())
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DynAlarmPicker(hour: Int, minute: Int, onTimeChange: (Int, Int) -> Unit) {
+    val hours = (0..11).map { it.toString().padStart(2,'0') }
+    val minutes = (0..59).map { it.toString().padStart(2,'0') }
+
+    Row(
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        DropdownMenuPicker(
+            label = "Hours",
+            items = hours,
+            selectedItem = hour,
+            onItemSelected = { newHour ->
+                onTimeChange(newHour.toInt(), minute)
+            }
+        )
+
+        Text(
+            text = ":",
+            fontSize = 24.sp,
+            modifier = Modifier.padding(horizontal = 8.dp))
+
+        DropdownMenuPicker(
+            label = "Minutes",
+            items = minutes,
+            selectedItem = minute,
+            onItemSelected = { newMinute ->
+                onTimeChange(hour, newMinute.toInt())
+            }
+        )
+    }
 }
 
+@Composable
+fun DropdownMenuPicker(
+    label: String,
+    items: List<String>,
+    selectedItem: Int,
+    onItemSelected: (Int) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box(modifier = Modifier.wrapContentSize(Alignment.TopStart)) {
+        OutlinedButton(onClick = { expanded = true }) {
+            Text(text = "$label: ${items[selectedItem]}")
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            items.forEachIndexed { index, item ->
+                DropdownMenuItem(onClick = {
+                    onItemSelected(index)
+                    expanded = false
+                }) {
+                    Text(text = item.toString())
+                }
+            }
+        }
+    }
+}
+
+// View Model to store the user selected regular alarm time.
+class AlarmViewModel : ViewModel() {
+    var regAlarmTime: String by mutableStateOf(LocalTime.NOON.toString())
+}
+
+class ABoolViewModel : ViewModel() {
+    var regAlarmSet: Boolean by  mutableStateOf(false)
+}
+
+class DynamicViewModel : ViewModel() {
+    var dynAlarmTime: String by mutableStateOf("08:00")
+}
+
+class DBoolViewModel : ViewModel() {
+    var dynAlarmSet: Boolean by  mutableStateOf(false)
+}
 
 
 
