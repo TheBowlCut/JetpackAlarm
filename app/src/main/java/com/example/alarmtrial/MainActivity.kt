@@ -90,15 +90,26 @@ import java.util.Calendar
 import java.util.Locale
 
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), ConvertToMilliCallback {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             AlarmTrialTheme {
                 AlarmTrialLayout(this)
-
             }
         }
+    }
+
+    override fun onConversionComplete(totalMilli: Double) {
+        Log.d("MainActivity", "Total Milliseconds: $totalMilli")
+        Toast.makeText(this, "Total Milliseconds: $totalMilli", Toast.LENGTH_LONG).show()
+
+        // Start the service and pass the totalMilli value
+        //val intent = Intent(this, CountdownTimer::class.java)
+        //intent.putExtra("totalMilli", totalMilli).apply {
+        //    action = CountdownTimer.ACTION_START
+        //}
+        //startService(intent)
     }
 }
 
@@ -272,7 +283,8 @@ fun AlarmScreen(activity: AppCompatActivity,
 
                 1 -> DynamicAlarmScreen(
                     dynamicViewModel,
-                    dynBoolViewModeel
+                    dynBoolViewModeel,
+                    activity
                 )
 
                 2 -> SleepScreen()
@@ -417,7 +429,8 @@ fun RegularAlarmScreen(
 @Composable
 fun DynamicAlarmScreen(
     dynViewModel: DynamicViewModel,
-    dynBoolViewModel: DBoolViewModel
+    dynBoolViewModel: DBoolViewModel,
+    activity: AppCompatActivity
 ) {
 
     var hour by remember { mutableStateOf(8) }
@@ -477,7 +490,7 @@ fun DynamicAlarmScreen(
             Button(
                 onClick = {
                     selectedCntDown = String.format("%02d:%02d", hour, minute)
-                    // convertToMilli(hour, minute)
+                    ConvertToMilli(hour, minute, activity as ConvertToMilliCallback)
                     // startCountdown(hour, minute)
                     dynAlarmSet = !dynAlarmSet
                 },
