@@ -6,9 +6,11 @@ import android.app.AlertDialog
 import android.app.Dialog
 import android.app.PendingIntent
 import android.app.TimePickerDialog
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.PowerManager
@@ -60,6 +62,7 @@ import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TimePickerState
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -80,6 +83,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -98,18 +102,37 @@ class MainActivity : AppCompatActivity(), ConvertToMilliCallback {
                 AlarmTrialLayout(this)
             }
         }
+        // Register the broadcast receiver using LocalBroadcastManager
+        val filter = IntentFilter(CountdownTimer.COUNTDOWN_BR)
+        LocalBroadcastManager.getInstance(this).registerReceiver(countdownReceiver, filter)
     }
 
     override fun onConversionComplete(totalMilli: Double) {
         Log.d("MainActivity", "Total Milliseconds: $totalMilli")
         Toast.makeText(this, "Total Milliseconds: $totalMilli", Toast.LENGTH_LONG).show()
 
-        // Start the service and pass the totalMilli value
-        //val intent = Intent(this, CountdownTimer::class.java)
-        //intent.putExtra("totalMilli", totalMilli).apply {
-        //    action = CountdownTimer.ACTION_START
-        //}
-        //startService(intent)
+        //Start the service and pass the totalMilli value
+        val intent = Intent(this, CountdownTimer::class.java)
+        intent.putExtra("totalMilli", totalMilli).apply {
+            action = CountdownTimer.ACTION_START
+        }
+        startService(intent)
+    }
+
+    private val countdownReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val timeRemaining = intent?.getLongExtra(CountdownTimer.EXTRA_TIME_REMAINING, 0L) ?: 0L
+            val isPaused = intent?.getBooleanExtra(CountdownTimer.EXTRA_PAUSE_STATE, false) ?: false
+
+            Log.d("MainActivity", "Time remaining received: $timeRemaining seconds")
+            // Update UI accordingly
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Unregister the receiver
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(countdownReceiver)
     }
 }
 
@@ -335,7 +358,6 @@ fun RegularAlarmScreen(
         regBoolViewModel::regAlarmSet
     }
 
-
     val timePickerState = remember {
         TimePickerState(
             is24Hour = true,
@@ -435,6 +457,8 @@ fun DynamicAlarmScreen(
 
     var hour by remember { mutableStateOf(8) }
     var minute by remember { mutableStateOf(0) }
+    var timeRemaining by remember { mutableStateOf(0L) }
+    var isPaused by remember { mutableStateOf(false)}
 
     //This captures the user selected time and keeps in place through recomposition
     var selectedCntDown by remember {
@@ -443,6 +467,29 @@ fun DynamicAlarmScreen(
 
     var dynAlarmSet by remember {
         dynBoolViewModel::dynAlarmSet
+    }
+
+    // DisposableEffect is used to handle side effects that need explicit cleanup when
+    // the composable leaves the composition. Useful for starting and stopping receivers,
+    // sensors etc.
+    DisposableEffect(Unit) {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                val time = intent?.getLongExtra(CountdownTimer.EXTRA_TIME_REMAINING, 0L) ?: 0L
+                val isPausedReceived =
+                    intent?.getBooleanExtra(CountdownTimer.EXTRA_PAUSE_STATE, false) ?: false
+                if (!isPausedReceived) {
+                    timeRemaining = time
+                }
+                isPaused = isPausedReceived
+            }
+        }
+        val filter = IntentFilter(CountdownTimer.COUNTDOWN_BR)
+        LocalBroadcastManager.getInstance(activity).registerReceiver(receiver, filter)
+
+        onDispose {
+            LocalBroadcastManager.getInstance(activity).unregisterReceiver(receiver)
+        }
     }
 
     Column(
@@ -459,6 +506,11 @@ fun DynamicAlarmScreen(
         if (dynAlarmSet){
             Text(
                 text = "Sleep Timer: $selectedCntDown",
+                style = MaterialTheme.typography.headlineMedium
+            )
+            Spacer(modifier = Modifier.padding(8.dp))
+            Text(
+                text = "Time Remaining: $timeRemaining seconds",
                 style = MaterialTheme.typography.headlineMedium
             )
         } else {

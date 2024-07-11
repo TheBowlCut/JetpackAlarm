@@ -36,6 +36,7 @@
             android:name=".AlarmService"
             android:enabled="true"
             android:exported="false" />
+        <service android:name=".CountdownTimer"/>
     </application>
 
 </manifest>
