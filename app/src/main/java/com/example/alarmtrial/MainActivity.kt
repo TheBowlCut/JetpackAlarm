@@ -543,7 +543,6 @@ fun DynamicAlarmScreen(
                 onClick = {
                     selectedCntDown = String.format("%02d:%02d", hour, minute)
                     ConvertToMilli(hour, minute, activity as ConvertToMilliCallback)
-                    // startCountdown(hour, minute)
                     dynAlarmSet = !dynAlarmSet
                 },
                 modifier = Modifier
@@ -557,7 +556,11 @@ fun DynamicAlarmScreen(
         if(dynAlarmSet){
             Button(
                 onClick = {
+                    // Stop the countdown service
+                    val intent = Intent(activity, CountdownTimer::class.java)
+                    activity.stopService(intent)
                     dynAlarmSet = !dynAlarmSet
+                    isPaused = false
                 },
                 modifier = Modifier
                     .padding(vertical = 24.dp)
