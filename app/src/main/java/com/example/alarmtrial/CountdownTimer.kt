@@ -64,6 +64,10 @@ class CountdownTimer : Service() {
             }
 
             override fun onFinish() {
+                val alarmIntent = Intent(applicationContext, AlarmService::class.java).apply {
+                    putExtra("NotificationMessage", "Test")
+                }
+                applicationContext.startService(alarmIntent)
                 stopSelf()
             }
         }
