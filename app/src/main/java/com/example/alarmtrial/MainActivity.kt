@@ -407,9 +407,6 @@ fun RegularAlarmScreen(
             if(!regAlarmSet){
                 Button(
                     onClick = {
-                        // First check if permission is granted fpr Activity Recognition
-                        permissionChecker(activity)
-                        powerModeCheck(activity)
 
                         val hour = timePickerState.hour
                         val minute = timePickerState.minute
@@ -541,6 +538,10 @@ fun DynamicAlarmScreen(
         if(!dynAlarmSet) {
             Button(
                 onClick = {
+                    // First check if permission is granted fpr Activity Recognition
+                    permissionChecker(activity)
+                    powerModeCheck(activity)
+
                     selectedCntDown = String.format("%02d:%02d", hour, minute)
                     ConvertToMilli(hour, minute, activity as ConvertToMilliCallback)
                     dynAlarmSet = !dynAlarmSet
@@ -557,8 +558,7 @@ fun DynamicAlarmScreen(
             Button(
                 onClick = {
                     // Stop the countdown service
-                    val intent = Intent(activity, CountdownTimer::class.java)
-                    activity.stopService(intent)
+                    cancelAlarm(activity)
                     dynAlarmSet = !dynAlarmSet
                     isPaused = false
                 },
@@ -606,6 +606,12 @@ fun SettingsScreen() {
 //Cancel alarm
 fun cancelAlarm (context: Context){
 
+    //var dynAlarmSet = dynBoolViewModel::dynAlarmSet
+    //var regAlarmSet = regBoolViewModel::regAlarmSet
+
+    //dynAlarmSet = false
+    //regAlarmSet = false
+
     val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
     val alarmIntent = Intent(context, AlarmReceiver::class.java).apply {
         putExtra("NotificationMessage", "Test")
@@ -621,6 +627,10 @@ fun cancelAlarm (context: Context){
         )
 
     alarmManager.cancel(alarmPendingintent)
+
+    // Stop the countdown service
+    val intent = Intent(context, CountdownTimer::class.java)
+    context.stopService(intent)
 
 }
 
