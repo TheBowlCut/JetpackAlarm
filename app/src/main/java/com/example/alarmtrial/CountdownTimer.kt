@@ -1,18 +1,17 @@
 package com.example.alarmtrial
 
 import android.annotation.SuppressLint
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.media.MediaPlayer
 import android.os.CountDownTimer
-import android.os.Handler
 import android.os.IBinder
-import android.os.Looper
-import android.os.Vibrator
 import android.util.Log
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.gms.location.ActivityRecognition
@@ -42,6 +41,7 @@ class CountdownTimer : Service() {
     private var countDownTimer: CountDownTimer? = null
     private var timeRemaining: Long = 0L
     private var isPaused: Boolean = false
+    private var timerActive: Boolean = false
     private var totalMilli: Double = 0.00
     private var confLimit: Int = 1
     private lateinit var sleepReceiver: SleepReceiver
@@ -55,12 +55,28 @@ class CountdownTimer : Service() {
             {pauseCountdown() },
             {resumeCountdown() },
             isPaused,
+            timerActive,
             confLimit
         )
 
         val intentFilter = IntentFilter(TRANSITIONS_RECEIVER_ACTION)
 
         registerReceiver(sleepReceiver, intentFilter)
+
+        val CHANNELID = "Foreground Service ID"
+        val channel = NotificationChannel(
+            CHANNELID,
+            CHANNELID,
+            NotificationManager.IMPORTANCE_LOW
+        )
+
+        getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+        val notification: Notification.Builder = Notification.Builder(this, CHANNELID)
+            .setContentText("Dynamic sleep timer active")
+            .setContentTitle("SnorLabs")
+            .setSmallIcon(R.drawable.snorlabs_icon_aug2023_512)
+
+        startForeground(2, notification.build())
 
     }
 
@@ -122,7 +138,8 @@ class CountdownTimer : Service() {
         private val startCountdown: (Context, Long) -> Unit,
         private val pauseCountdown: () -> Unit,
         private val resumeCountdown: () -> Unit,
-        private val isPaused: Boolean,
+        private var isPaused: Boolean,
+        private var timerActive: Boolean,
         private var confLimit: Int
     ) : BroadcastReceiver() {
         //Broadcast receiver looking for activity recognition broadcasts
@@ -142,6 +159,7 @@ class CountdownTimer : Service() {
             Log.d(TAG, "SleepReceiver")
             Log.d(TAG, "SleepConf = $confLimit")
             Log.d(TAG, "isPaused = $isPaused")
+            Log.d(TAG, "timerActive = $timerActive")
 
             if (SleepClassifyEvent.hasEvents(intent)) {
                 // If the intent has the required sleepActivity info, this loop reviews the data.
@@ -160,19 +178,31 @@ class CountdownTimer : Service() {
                     sleepConfidence.add(event.confidence)
                     Log.d(TAG, "SleepConf Array: $sleepConfidence")
 
-                    if (confTimerInt >= confLimit) {
+                    //LOOP 1: if there is no timer active (!timerActive), activate timer.
+                    if (confTimerInt >= confLimit && !timerActive && !isPaused) {
                         Log.d(TAG, "Loop 1")
+                        timerActive = true
                         startCountdown(context, totalMilli.toLong())
 
-                    } else if (confTimerInt < confLimit && !isPaused) {
+                    // LOOP 2: If confident User is now awake AFTER timer has started,
+                    // pause the active timer.
+                    } else if (confTimerInt < confLimit && timerActive && !isPaused) {
                         Log.d(TAG, "Loop 2")
+                        isPaused = true
                         pauseCountdown()
 
-                    } else if (confTimerInt > confLimit && isPaused) {
+                    // LOOP 3: If confider User is now asleep AFTER timer has started,
+                    // but timer paused, resume the timer
+                    // Confidence is high user is asleep, timer has already been started,
+                    // but timer is not currently active
+                    } else if (confTimerInt > confLimit && timerActive && isPaused) {
                         Log.d(TAG, "Loop 3")
+                        isPaused = false
                         resumeCountdown()
 
-                    } else if (confTimerInt < confLimit && isPaused) {
+                    // LOOP 4: If confident User is still awake after pause,
+                    // the timer stays in a paused state
+                    } else if (confTimerInt < confLimit && timerActive && isPaused) {
                         Log.d(TAG, "Loop 4")
                         pauseCountdown()
                     }
@@ -188,6 +218,8 @@ class CountdownTimer : Service() {
 
 
     private fun startCountdown(context: Context, millis: Long) {
+        Log.d(TAG,"startCountdown")
+
         countDownTimer?.cancel()  // Cancel any existing countdown
 
         countDownTimer = object : CountDownTimer(millis, 1000) {
@@ -213,14 +245,14 @@ class CountdownTimer : Service() {
     private fun pauseCountdown(){
         Log.d(TAG, "pauseCountdown")
         countDownTimer?.cancel()
-        isPaused = true
-        Log.d(TAG,"isPaused, pauseCountdown $isPaused")
+        //isPaused = true
+        //Log.d(TAG,"isPaused, pauseCountdown $isPaused")
         broadcastPauseState(true)
     }
 
     private fun resumeCountdown(){
         Log.d(TAG, "resumeCountdown")
-        isPaused = false
+        //isPaused = false
         startCountdown(applicationContext, timeRemaining)
         broadcastPauseState(false)
     }
@@ -239,6 +271,7 @@ class CountdownTimer : Service() {
     }
 
     override fun onDestroy() {
+        Log.d(TAG,"onDestroy Timer")
         countDownTimer?.cancel()  // Cancel the countdown when the service is destroyed
 
         // Unregister the receiver only if it has been initialized

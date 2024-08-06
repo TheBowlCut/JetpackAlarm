@@ -116,7 +116,7 @@ class MainActivity : AppCompatActivity(), ConvertToMilliCallback {
         intent.putExtra("totalMilli", totalMilli).apply {
             action = CountdownTimer.ACTION_START
         }
-        startService(intent)
+        startForegroundService(intent)
     }
 
     private val countdownReceiver = object : BroadcastReceiver() {
