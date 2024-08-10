@@ -43,7 +43,7 @@ class CountdownTimer : Service() {
     private var isPaused: Boolean = false
     private var timerActive: Boolean = false
     private var totalMilli: Double = 0.00
-    private var confLimit: Int = 1
+    private var confLimit: Int = 5
     private lateinit var sleepReceiver: SleepReceiver
     private val TRANSITIONS_RECEIVER_ACTION: String = "TRANSITIONS_RECEIVER_ACTION"
 
@@ -208,7 +208,7 @@ class CountdownTimer : Service() {
                     }
                 }
 
-                confLimit = if (confLimit == 1) 100 else 1
+                //confLimit = if (confLimit == 1) 100 else 1
 
             } else {
                 Log.d(TAG, "hasEvents False")

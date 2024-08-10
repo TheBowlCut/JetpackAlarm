@@ -281,7 +281,7 @@ fun AlarmScreen(activity: AppCompatActivity,
                 alarmViewModel: AlarmViewModel,
                 regBoolViewModel: ABoolViewModel,
                 dynamicViewModel: DynamicViewModel,
-                dynBoolViewModeel: DBoolViewModel
+                dynBoolViewModel: DBoolViewModel
     ){
 
     val pagerState = rememberPagerState(pageCount = { 3 })
@@ -301,12 +301,14 @@ fun AlarmScreen(activity: AppCompatActivity,
                 0 -> RegularAlarmScreen(
                     activity = activity,
                     alarmViewModel,
-                    regBoolViewModel
+                    regBoolViewModel,
+                    dynBoolViewModel
                 )
 
                 1 -> DynamicAlarmScreen(
                     dynamicViewModel,
-                    dynBoolViewModeel,
+                    dynBoolViewModel,
+                    regBoolViewModel,
                     activity
                 )
 
@@ -344,7 +346,8 @@ fun AlarmScreen(activity: AppCompatActivity,
 fun RegularAlarmScreen(
     activity: AppCompatActivity,
     alarmViewModel: AlarmViewModel,
-    regBoolViewModel: ABoolViewModel
+    regBoolViewModel: ABoolViewModel,
+    dynBoolViewModel: DBoolViewModel
 ) {
 
     val currentTime = Calendar.getInstance()
@@ -430,8 +433,8 @@ fun RegularAlarmScreen(
             if (regAlarmSet){
                 Button(
                     onClick = {
-                        cancelAlarm(activity)
-                        regAlarmSet = !regAlarmSet
+                        cancelAlarm(activity,dynBoolViewModel,regBoolViewModel)
+                        //regAlarmSet = !regAlarmSet
                     },
                     modifier = Modifier
                         .padding(vertical = 24.dp)
@@ -449,6 +452,7 @@ fun RegularAlarmScreen(
 fun DynamicAlarmScreen(
     dynViewModel: DynamicViewModel,
     dynBoolViewModel: DBoolViewModel,
+    regBoolViewModel: ABoolViewModel,
     activity: AppCompatActivity
 ) {
 
@@ -558,8 +562,8 @@ fun DynamicAlarmScreen(
             Button(
                 onClick = {
                     // Stop the countdown service
-                    cancelAlarm(activity)
-                    dynAlarmSet = !dynAlarmSet
+                    cancelAlarm(activity, dynBoolViewModel, regBoolViewModel)
+                    //dynAlarmSet = !dynAlarmSet
                     isPaused = false
                 },
                 modifier = Modifier
@@ -604,13 +608,14 @@ fun SettingsScreen() {
 }
 
 //Cancel alarm
-fun cancelAlarm (context: Context){
+fun cancelAlarm (
+    context: Context,
+    dynBoolViewModel: DBoolViewModel,
+    regBoolViewModel: ABoolViewModel
+){
 
-    //var dynAlarmSet = dynBoolViewModel::dynAlarmSet
-    //var regAlarmSet = regBoolViewModel::regAlarmSet
-
-    //dynAlarmSet = false
-    //regAlarmSet = false
+    dynBoolViewModel.dynAlarmSet = false
+    regBoolViewModel.regAlarmSet = false
 
     val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
     val alarmIntent = Intent(context, AlarmReceiver::class.java).apply {
