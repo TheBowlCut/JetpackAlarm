@@ -36,6 +36,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -63,6 +64,7 @@ import androidx.compose.material3.TimePickerState
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -89,6 +91,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.alarmtrial.ui.theme.AlarmTrialTheme
+import kotlinx.coroutines.launch
 import java.time.LocalTime
 import java.util.Calendar
 import java.util.Locale
@@ -275,7 +278,8 @@ fun AlarmNavigation(navController:NavHostController, activity: AppCompatActivity
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class,
+    ExperimentalFoundationApi::class)
 @Composable
 fun AlarmScreen(activity: AppCompatActivity,
                 alarmViewModel: AlarmViewModel,
@@ -287,6 +291,32 @@ fun AlarmScreen(activity: AppCompatActivity,
     val pagerState = rememberPagerState(pageCount = { 3 })
     val scope = rememberCoroutineScope()
 
+
+    if (dynBoolViewModel.dynAlarmSet) {
+        LaunchedEffect(Unit){
+        scope.launch {
+            pagerState.animateScrollToPage(1)
+            }
+        }
+    }
+    if (regBoolViewModel.regAlarmSet) {
+        LaunchedEffect(Unit){
+            scope.launch {
+                pagerState.animateScrollToPage(2)
+            }
+        }
+    }
+
+    if (dynBoolViewModel.cancelAll) {
+        LaunchedEffect(Unit){
+            scope.launch {
+                pagerState.animateScrollToPage(0)
+                dynBoolViewModel.cancelAll = false
+            }
+        }
+    }
+
+
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -295,24 +325,30 @@ fun AlarmScreen(activity: AppCompatActivity,
             state = pagerState,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 32.dp) // Adjust padding to ensure space for indicators
+                .padding(bottom = 32.dp), // Adjust padding to ensure space for indicators
+            userScrollEnabled = false
         ) { page ->
             when (page) {
-                0 -> RegularAlarmScreen(
-                    activity = activity,
-                    alarmViewModel,
-                    regBoolViewModel,
-                    dynBoolViewModel
-                )
 
-                1 -> DynamicAlarmScreen(
+                0 -> DynamicAlarmScreen(
                     dynamicViewModel,
                     dynBoolViewModel,
                     regBoolViewModel,
                     activity
                 )
 
-                2 -> SleepScreen()
+                1 -> RegularAlarmScreen(
+                    activity = activity,
+                    alarmViewModel,
+                    regBoolViewModel,
+                    dynBoolViewModel
+                )
+
+                2 -> SleepScreen(
+                    activity,
+                    regBoolViewModel,
+                    dynBoolViewModel
+                )
             }
         }
 
@@ -337,6 +373,134 @@ fun AlarmScreen(activity: AppCompatActivity,
                         .background(color)
                 )
             }
+        }
+    }
+}
+
+@Composable
+fun DynamicAlarmScreen(
+    dynViewModel: DynamicViewModel,
+    dynBoolViewModel: DBoolViewModel,
+    regBoolViewModel: ABoolViewModel,
+    activity: AppCompatActivity
+) {
+
+    var hour by remember { mutableStateOf(8) }
+    var minute by remember { mutableStateOf(0) }
+    var timeRemaining by remember { mutableStateOf(0L) }
+    var isPaused by remember { mutableStateOf(false)}
+
+    //This captures the user selected time and keeps in place through recomposition
+    var selectedCntDown by remember {
+        dynViewModel::dynAlarmTime
+    }
+
+    var dynAlarmSet by remember {
+        dynBoolViewModel::dynAlarmSet
+    }
+
+    // DisposableEffect is used to handle side effects that need explicit cleanup when
+    // the composable leaves the composition. Useful for starting and stopping receivers,
+    // sensors etc.
+    DisposableEffect(Unit) {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                val time = intent?.getLongExtra(CountdownTimer.EXTRA_TIME_REMAINING, 0L) ?: 0L
+                val isPausedReceived =
+                    intent?.getBooleanExtra(CountdownTimer.EXTRA_PAUSE_STATE, false) ?: false
+                if (!isPausedReceived) {
+                    timeRemaining = time
+                }
+                isPaused = isPausedReceived
+            }
+        }
+        val filter = IntentFilter(CountdownTimer.COUNTDOWN_BR)
+        LocalBroadcastManager.getInstance(activity).registerReceiver(receiver, filter)
+
+        onDispose {
+            LocalBroadcastManager.getInstance(activity).unregisterReceiver(receiver)
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(8.dp)
+            .navigationBarsPadding()
+        , verticalArrangement = Arrangement.Top
+        , horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+
+        Spacer(modifier = Modifier.padding(8.dp))
+
+        if (dynAlarmSet){
+            Text(
+                text = "Sleep Timer: $selectedCntDown",
+                style = MaterialTheme.typography.headlineMedium
+            )
+            Spacer(modifier = Modifier.padding(8.dp))
+            Text(
+                text = "Time Remaining: $timeRemaining seconds",
+                style = MaterialTheme.typography.headlineMedium
+            )
+        } else {
+            Text(
+                text = "Set your dynamic alarm:",
+                style = MaterialTheme.typography.headlineMedium
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .weight(1f)
+            , contentAlignment = Center
+        ) {
+            DynAlarmPicker(
+                hour = hour,
+                minute = minute,
+                onTimeChange = { newHour, newMinute ->
+                    hour = newHour
+                    minute = newMinute
+                }
+            )
+        }
+
+        Spacer(modifier = Modifier
+            .height(8.dp))
+
+        if(!dynAlarmSet) {
+            Button(
+                onClick = {
+                    // First check if permission is granted fpr Activity Recognition
+                    permissionChecker(activity)
+                    powerModeCheck(activity)
+
+                    selectedCntDown = String.format("%02d:%02d", hour, minute)
+                    ConvertToMilli(hour, minute, activity as ConvertToMilliCallback)
+                    dynAlarmSet = !dynAlarmSet
+                },
+                modifier = Modifier
+                    .padding(vertical = 24.dp)
+                    .fillMaxWidth()
+            ) {
+                Text(text = "Set Time")
+            }
+        }
+
+        if(dynAlarmSet){
+            Button(
+                onClick = {
+                    // Stop the countdown service
+                    cancelAlarm(activity, dynBoolViewModel, regBoolViewModel)
+                    isPaused = false
+                },
+                modifier = Modifier
+                    .padding(vertical = 24.dp)
+                    .fillMaxWidth()
+            ) {
+                Text(text = "Cancel Timer")
+            }
+
         }
     }
 }
@@ -449,141 +613,48 @@ fun RegularAlarmScreen(
 }
 
 @Composable
-fun DynamicAlarmScreen(
-    dynViewModel: DynamicViewModel,
-    dynBoolViewModel: DBoolViewModel,
+fun SleepScreen(
+    activity: AppCompatActivity,
     regBoolViewModel: ABoolViewModel,
-    activity: AppCompatActivity
+    dynBoolViewModel: DBoolViewModel
 ) {
 
-    var hour by remember { mutableStateOf(8) }
-    var minute by remember { mutableStateOf(0) }
-    var timeRemaining by remember { mutableStateOf(0L) }
-    var isPaused by remember { mutableStateOf(false)}
-
-    //This captures the user selected time and keeps in place through recomposition
-    var selectedCntDown by remember {
-        dynViewModel::dynAlarmTime
-    }
-
-    var dynAlarmSet by remember {
-        dynBoolViewModel::dynAlarmSet
-    }
-
-    // DisposableEffect is used to handle side effects that need explicit cleanup when
-    // the composable leaves the composition. Useful for starting and stopping receivers,
-    // sensors etc.
-    DisposableEffect(Unit) {
-        val receiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context?, intent: Intent?) {
-                val time = intent?.getLongExtra(CountdownTimer.EXTRA_TIME_REMAINING, 0L) ?: 0L
-                val isPausedReceived =
-                    intent?.getBooleanExtra(CountdownTimer.EXTRA_PAUSE_STATE, false) ?: false
-                if (!isPausedReceived) {
-                    timeRemaining = time
-                }
-                isPaused = isPausedReceived
-            }
-        }
-        val filter = IntentFilter(CountdownTimer.COUNTDOWN_BR)
-        LocalBroadcastManager.getInstance(activity).registerReceiver(receiver, filter)
-
-        onDispose {
-            LocalBroadcastManager.getInstance(activity).unregisterReceiver(receiver)
-        }
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(8.dp)
-            .navigationBarsPadding()
-        , verticalArrangement = Arrangement.Top
-        , horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-
-        Spacer(modifier = Modifier.padding(8.dp))
-
-        if (dynAlarmSet){
-            Text(
-                text = "Sleep Timer: $selectedCntDown",
-                style = MaterialTheme.typography.headlineMedium
-            )
-            Spacer(modifier = Modifier.padding(8.dp))
-            Text(
-                text = "Time Remaining: $timeRemaining seconds",
-                style = MaterialTheme.typography.headlineMedium
-            )
-        } else {
-            Text(
-                text = "No Alarm Set",
-                style = MaterialTheme.typography.headlineMedium
-            )
-        }
-
-        Box(
-            modifier = Modifier
-                .weight(1f)
-            , contentAlignment = Center
-        ) {
-            DynAlarmPicker(
-                hour = hour,
-                minute = minute,
-                onTimeChange = { newHour, newMinute ->
-                    hour = newHour
-                    minute = newMinute
-                }
-            )
-        }
-
-        Spacer(modifier = Modifier
-            .height(8.dp))
-
-        if(!dynAlarmSet) {
-            Button(
-                onClick = {
-                    // First check if permission is granted fpr Activity Recognition
-                    permissionChecker(activity)
-                    powerModeCheck(activity)
-
-                    selectedCntDown = String.format("%02d:%02d", hour, minute)
-                    ConvertToMilli(hour, minute, activity as ConvertToMilliCallback)
-                    dynAlarmSet = !dynAlarmSet
-                },
-                modifier = Modifier
-                    .padding(vertical = 24.dp)
-                    .fillMaxWidth()
-            ) {
-                Text(text = "Set Time")
-            }
-        }
-
-        if(dynAlarmSet){
-            Button(
-                onClick = {
-                    // Stop the countdown service
-                    cancelAlarm(activity, dynBoolViewModel, regBoolViewModel)
-                    //dynAlarmSet = !dynAlarmSet
-                    isPaused = false
-                },
-                modifier = Modifier
-                    .padding(vertical = 24.dp)
-                    .fillMaxWidth()
-            ) {
-                Text(text = "Cancel Timer")
-            }
-
-        }
-    }
-}
-
-@Composable
-fun SleepScreen() {
     Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        modifier = Modifier
+            .padding(8.dp)
+            .fillMaxSize()
+            .navigationBarsPadding(), contentAlignment = TopCenter
     ) {
-        Text(text = "Sleep Alarm")
+        Column(
+            horizontalAlignment =
+            Alignment.CenterHorizontally
+        ) {
+
+            Spacer(modifier = Modifier.padding(8.dp))
+
+            Text(
+                text = "Sleep well...",
+                style = MaterialTheme.typography.headlineMedium
+            )
+
+            //Spacer to push the button to bottom of screen
+            Spacer(modifier = Modifier
+                .weight(0.25f)
+            )
+
+            Button(
+                onClick = {
+                    cancelAlarm(activity,dynBoolViewModel,regBoolViewModel)
+                },
+                modifier = Modifier
+                    .padding(vertical = 24.dp)
+                    .fillMaxWidth()
+
+            ) {
+                Text("Cancel Regular Alarm")
+            }
+
+        }
     }
 }
 
@@ -636,6 +707,8 @@ fun cancelAlarm (
     // Stop the countdown service
     val intent = Intent(context, CountdownTimer::class.java)
     context.stopService(intent)
+
+    dynBoolViewModel.cancelAll = true
 
 }
 
@@ -767,6 +840,9 @@ class DynamicViewModel : ViewModel() {
 
 class DBoolViewModel : ViewModel() {
     var dynAlarmSet: Boolean by  mutableStateOf(false)
+    // currentPage state to reset when cancel button pressed
+    var cancelAll: Boolean by  mutableStateOf(false)
+
 }
 
 
