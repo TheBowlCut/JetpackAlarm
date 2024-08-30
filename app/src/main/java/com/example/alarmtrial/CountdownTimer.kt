@@ -17,6 +17,7 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.gms.location.ActivityRecognition
 import com.google.android.gms.location.SleepClassifyEvent
 import com.google.android.gms.location.SleepSegmentRequest
+import java.util.concurrent.TimeUnit
 
 class CountdownTimer : Service() {
 
@@ -43,7 +44,7 @@ class CountdownTimer : Service() {
     private var isPaused: Boolean = false
     private var timerActive: Boolean = false
     private var totalMilli: Double = 0.00
-    private var confLimit: Int = 5
+    private var confLimit: Int = 1
     private lateinit var sleepReceiver: SleepReceiver
     private val TRANSITIONS_RECEIVER_ACTION: String = "TRANSITIONS_RECEIVER_ACTION"
 
@@ -260,7 +261,17 @@ class CountdownTimer : Service() {
     private fun broadcastTimeRemaining(timeRemaining: Long) {
         Log.d(TAG,"Broadcast: On")
         val intent = Intent(COUNTDOWN_BR)
-        intent.putExtra(EXTRA_TIME_REMAINING, timeRemaining / 1000) // Convert to seconds
+
+        var hms: String = String.format(
+            "%02d:%02d:%02d",
+            TimeUnit.MILLISECONDS.toHours(timeRemaining),
+            TimeUnit.MILLISECONDS.toMinutes(timeRemaining) -
+                    TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(timeRemaining)),
+            TimeUnit.MILLISECONDS.toSeconds(timeRemaining) -
+                    TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(timeRemaining))
+        )
+
+        intent.putExtra(EXTRA_TIME_REMAINING, hms) // Convert to seconds
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
 
