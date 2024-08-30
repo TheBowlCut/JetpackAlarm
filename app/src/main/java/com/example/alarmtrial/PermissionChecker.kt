@@ -13,25 +13,35 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.example.alarmtrial.ui.theme.AlarmTrialTheme
 
 class PermissionChecker: ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            PermissionContent(onPermissionAccepted = {
-                requestPermission()
-            }, onPermissionDeclined = {
-                declinePermission()
-            })
+            AlarmTrialTheme {
+                Surface() {
+                    PermissionContent(
+                        onPermissionAccepted = {
+                            requestPermission()
+                        }, onPermissionDeclined = {
+                            declinePermission()
+                        })
+                }
+            }
         }
     }
 
@@ -89,111 +99,66 @@ fun PermissionContent(
     onPermissionAccepted: () -> Unit,
     onPermissionDeclined: () -> Unit
 ){
+
     Box(
         modifier = Modifier
             .padding(16.dp)
             .fillMaxSize()
-            .padding(horizontal = 16.dp),
+            .navigationBarsPadding(),
         contentAlignment = Alignment.TopCenter
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(text = "Permission Activity")
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            Button(onClick = onPermissionAccepted) {
-                Text(text = "Accept")
-            }
-
-            Spacer(modifier = Modifier.padding(8.dp))
-
-            Button(onClick = onPermissionDeclined) {
-                Text(text = "Decline")
-            }
-        }
-    }
-}
-
-
-
-/*
-@Composable
-fun PermissionContent(activity: ComponentActivity) {
-    Box(modifier = Modifier
-        .padding(16.dp)
-        .fillMaxSize()
-        .padding(horizontal = 16.dp)
-        , contentAlignment = Alignment.TopCenter) {
         Column(
             horizontalAlignment =
             Alignment.CenterHorizontally
         ) {
 
-            Text(text = "Permission Activity")
+            Spacer(modifier = Modifier.padding(52.dp))
 
-            //Spacer to push the button to bottom of screen
-            Spacer(modifier = Modifier.weight(1f))
+            Text(
+                text = "Permission Required",
+                style = MaterialTheme.typography.displaySmall,
+                textAlign = TextAlign.Center
+            )
 
-            // Accept Permission
-            Button(
-                onClick = {
-                    acceptTerms(activity)
-                })
-            {
-                Text(text = "Accept")
-            }
+            Spacer(modifier = Modifier.padding(16.dp))
 
-            //Spacer
+            Text(
+                text = "- SnorLabs requires access to your phone sensors for detecting" +
+                        " when you are asleep.",
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center
+            )
+
             Spacer(modifier = Modifier.padding(8.dp))
 
-            // Decline Permission. Go back to MainActivity
+            Text(
+                text = "- No information is stored. " +
+                        "The information from your phone sensors are reviewed every 5 minutes " +
+                        "and from that, SnorLabs determines whether you are asleep.",
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.weight(1f))
+
             Button(
-                onClick = {
-                   declinePermission(activity)
-                })
-            {
-                Text(text = "Decline")
+                onClick = onPermissionAccepted
+            ) {
+                Text(
+                    text = "Accept",
+                    style = MaterialTheme.typography.titleLarge)
+            }
+
+            Button(
+                onClick = onPermissionDeclined,
+                modifier = Modifier
+                    .padding(bottom = 36.dp,top = 36.dp)
+            ) {
+                Text(
+                    text = "Decline",
+                    style = MaterialTheme.typography.titleLarge
+                )
             }
         }
     }
 }
-
-fun acceptTerms(activity: ComponentActivity) {
-
-    Log.d("PermissionChecker", "AcceptTerms")
-
-    val PERMISSION_REQUEST_ACTIVITY_RECOGNITION = 1001
-
-    // Users gets permission request from phone
-    if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        ActivityCompat.requestPermissions(
-            activity,
-            arrayOf<String>(Manifest.permission.ACTIVITY_RECOGNITION),
-            PERMISSION_REQUEST_ACTIVITY_RECOGNITION
-        )
-    }
-    // NEXT STEPS - Can't return this way or doesn't open pop up.
-    // Decline works, just need accept to work.
-    //returnIntent(activity)
-}
-
-fun declinePermission(activity: ComponentActivity) {
-    Toast.makeText(activity, "Permission Declined - SnorLabs cannot run",
-        Toast.LENGTH_LONG).show()
-
-    returnIntent(activity)
-
-}
-
-fun returnIntent (activity: ComponentActivity) {
-    val returnHomeIntent = Intent(activity
-        , MainActivity::class.java)
-        .apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-    activity.startActivity(returnHomeIntent)
-}
-
- */

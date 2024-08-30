@@ -418,7 +418,8 @@ fun DynamicAlarmScreen(
         , horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        Spacer(modifier = Modifier.padding(16.dp))
+        Spacer(modifier = Modifier
+            .padding(16.dp))
 
         Text(
             text = "Dynamic Sleep Timer",
