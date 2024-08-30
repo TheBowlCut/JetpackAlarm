@@ -73,7 +73,7 @@ class CountdownTimer : Service() {
 
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         val notification: Notification.Builder = Notification.Builder(this, CHANNELID)
-            .setContentText("Dynamic sleep timer active")
+            .setContentText("SnorLabs Running")
             .setContentTitle("SnorLabs")
             .setSmallIcon(R.drawable.snorlabs_icon_aug2023_512)
 

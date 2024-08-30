@@ -32,7 +32,7 @@ class AlarmNotification(private val context: Context) {
         val builder = NotificationCompat.Builder(context, channelId)
 
             .setContentText("Alarm has finished")
-            .setSmallIcon(R.drawable.ic_launcher_background)
+            .setSmallIcon(R.drawable.snorlabs_icon_aug2023_512)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(launchPendingIntent)
             .setAutoCancel(true)

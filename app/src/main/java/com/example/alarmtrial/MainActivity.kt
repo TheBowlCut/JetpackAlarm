@@ -22,6 +22,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.material.DropdownMenuItem
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -80,6 +81,7 @@ import androidx.compose.ui.Alignment.Companion.TopCenter
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
@@ -418,23 +420,11 @@ fun DynamicAlarmScreen(
 
         Spacer(modifier = Modifier.padding(16.dp))
 
-        if (dynAlarmSet){
-            Text(
-                text = "Sleep Timer: $selectedCntDown",
-                style = MaterialTheme.typography.headlineMedium
-            )
-            Spacer(modifier = Modifier.padding(8.dp))
-            Text(
-                text = "Time Remaining: $timeRemaining seconds",
-                style = MaterialTheme.typography.headlineMedium
-            )
-        } else {
-            Text(
-                text = "Dynamic Sleep Timer",
-                style = MaterialTheme.typography.headlineMedium,
-                textAlign = TextAlign.Center
-            )
-        }
+        Text(
+            text = "Dynamic Sleep Timer",
+            style = MaterialTheme.typography.headlineMedium,
+            textAlign = TextAlign.Center
+        )
 
         Box(
             modifier = Modifier
@@ -643,11 +633,21 @@ fun SleepScreen(
 
             Text(
                 text = "Time Remaining: $timeRemaining",
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.headlineSmall,
                 textAlign = TextAlign.Center,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)
+            )
+
+            Spacer(modifier = Modifier.padding(8.dp))
+
+            Image(
+                painter = painterResource(id = R.drawable.snorlabs_icon_aug2023_512),
+                contentDescription = "SnorLabs Logo",
+                modifier = Modifier
+                    .padding(8.dp),
+                alpha = 0.15f
             )
 
             //Spacer to push the button to bottom of screen
