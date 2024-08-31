@@ -397,8 +397,6 @@ fun DynamicAlarmScreen(
 
     var hour by remember { mutableStateOf(8) }
     var minute by remember { mutableStateOf(0) }
-    var timeRemaining by remember { mutableStateOf(0L) } // #1
-    var isPaused by remember { mutableStateOf(false)}
 
     //This captures the user selected time and keeps in place through recomposition
     var selectedCntDown by remember {
@@ -407,6 +405,14 @@ fun DynamicAlarmScreen(
 
     var dynAlarmSet by remember {
         dynBoolViewModel::dynAlarmSet
+    }
+
+    var permissionBool by remember {
+        dynBoolViewModel::permissionChecker
+    }
+
+    var powerModeBool by remember {
+        dynBoolViewModel::powerModeChecker
     }
 
     Column(
@@ -454,17 +460,22 @@ fun DynamicAlarmScreen(
         if(!dynAlarmSet) {
             Button(
                 onClick = {
-                    // First check if permission is granted fpr Activity Recognition
-                    permissionChecker(activity)
-                    powerModeCheck(activity)
+                    // First check if permission is granted for Activity Recognition
+                    permissionChecker(activity,dynBoolViewModel)
 
-                    selectedCntDown = String.format("%02d:%02d", hour, minute)
-                    ConvertToMilli(hour, minute, activity as ConvertToMilliCallback)
-                    dynAlarmSet = !dynAlarmSet
+                    if(permissionBool) {
+
+                        powerModeCheck(activity,dynBoolViewModel)
+
+                        if(powerModeBool){
+                        selectedCntDown = String.format("%02d:%02d", hour, minute)
+                        ConvertToMilli(hour, minute, activity as ConvertToMilliCallback)
+                        dynAlarmSet = !dynAlarmSet
+                        }
+                    }
                 },
                 modifier = Modifier
                     .padding(bottom = 36.dp, top = 36.dp)
-                    //.fillMaxWidth()
             ) {
                 Text(
                     text = "Set Time",
@@ -733,13 +744,16 @@ fun cancelAlarm (
 
 }
 
-fun permissionChecker(activity: AppCompatActivity) {
+fun permissionChecker(
+    activity: AppCompatActivity,
+    dynBoolViewModel: DBoolViewModel) {
+
     if(ContextCompat.checkSelfPermission
             (activity, Manifest.permission.ACTIVITY_RECOGNITION)
         == PackageManager.PERMISSION_GRANTED
     ) {
+        dynBoolViewModel.permissionChecker = true
         Toast.makeText(activity, "Permission Given", Toast.LENGTH_LONG).show()
-
     } else {
         Toast.makeText(activity, "Permission NOT GIVEN", Toast.LENGTH_LONG).show()
         //Opens up the cancel alarm activity for user. Service remains until closed.
@@ -752,13 +766,22 @@ fun permissionChecker(activity: AppCompatActivity) {
     }
 }
 
-fun powerModeCheck(activity: AppCompatActivity) {
+fun powerModeCheck(
+    activity: AppCompatActivity,
+    dynBoolViewModel: DBoolViewModel) {
+
     val powerManager = activity.getSystemService(Context.POWER_SERVICE) as PowerManager?
     val powerSaveMode = powerManager?.isPowerSaveMode ?: false
 
     if(powerSaveMode){
+
         val dialogFragment = PowerDialogFragment()
         dialogFragment.show(activity.supportFragmentManager, "PowerDialogFragment")
+
+    } else {
+
+        dynBoolViewModel.powerModeChecker = true
+
     }
 }
 
@@ -866,6 +889,8 @@ class DynamicViewModel : ViewModel() {
 
 class DBoolViewModel : ViewModel() {
     var dynAlarmSet: Boolean by  mutableStateOf(false)
+    var permissionChecker: Boolean by mutableStateOf(false)
+    var powerModeChecker: Boolean by mutableStateOf(false)
     // currentPage state to reset when cancel button pressed
     var cancelAll: Boolean by  mutableStateOf(false)
 
