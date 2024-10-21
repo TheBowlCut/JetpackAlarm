@@ -1,13 +1,11 @@
-package com.example.alarmtrial
+package com.snorlabs.alarmtrial
 
-import android.app.Activity
 import android.app.AlarmManager
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.window.OnBackInvokedDispatcher
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -28,9 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.alarmtrial.ui.theme.AlarmTrialTheme
-import com.example.alarmtrial.ui.theme.backgroundLightHighContrast
-import org.w3c.dom.Text
+import com.snorlabs.alarmtrial.ui.theme.AlarmTrialTheme
 import java.util.Calendar
 
 class AlarmActivity : ComponentActivity() {

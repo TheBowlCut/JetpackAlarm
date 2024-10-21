@@ -4,15 +4,15 @@ plugins {
 }
 
 android {
-    namespace = "com.example.alarmtrial"
+    namespace = "com.snorlabs.alarmtrial"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.alarmtrial"
+        applicationId = "com.snorlabs.alarmtrial"
         minSdk = 26
-        targetSdk = 33
+        targetSdk = 34
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

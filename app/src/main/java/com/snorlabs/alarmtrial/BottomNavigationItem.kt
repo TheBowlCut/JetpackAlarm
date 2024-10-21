@@ -1,4 +1,4 @@
-package com.example.alarmtrial
+package com.snorlabs.alarmtrial
 
 import androidx.compose.ui.graphics.vector.ImageVector
 

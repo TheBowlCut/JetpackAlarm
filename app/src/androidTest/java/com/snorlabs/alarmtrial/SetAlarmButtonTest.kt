@@ -1,11 +1,7 @@
-package com.example.alarmtrial
+package com.snorlabs.alarmtrial
 
-import android.app.Application
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.test.core.app.ApplicationProvider
 import androidx.test.platform.app.InstrumentationRegistry
-import com.example.alarmtrial.ui.theme.AlarmTrialTheme
 import org.junit.Rule
 import org.junit.Test
 

@@ -1,4 +1,4 @@
-package com.example.alarmtrial
+package com.snorlabs.alarmtrial
 
 class ConvertToMilli(hour: Int, minute: Int, private val callback: ConvertToMilliCallback) {
     val hourMilli: Double = hour * 3.6e6

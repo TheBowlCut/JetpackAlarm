@@ -1,4 +1,4 @@
-package com.example.alarmtrial.ui.theme
+package com.snorlabs.alarmtrial.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

@@ -1,4 +1,4 @@
-package com.example.alarmtrial
+package com.snorlabs.alarmtrial
 
 import android.annotation.SuppressLint
 import android.app.Notification
@@ -44,7 +44,7 @@ class CountdownTimer : Service() {
     private var isPaused: Boolean = false
     private var timerActive: Boolean = false
     private var totalMilli: Double = 0.00
-    private var confLimit: Int = 1
+    private var confLimit: Int = 95
     private lateinit var sleepReceiver: SleepReceiver
     private val TRANSITIONS_RECEIVER_ACTION: String = "TRANSITIONS_RECEIVER_ACTION"
 

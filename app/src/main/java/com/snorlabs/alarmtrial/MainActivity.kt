@@ -1,14 +1,12 @@
-package com.example.alarmtrial
+package com.snorlabs.alarmtrial
 
 import android.Manifest
 import android.app.AlarmManager
 import android.app.AlertDialog
 import android.app.Dialog
 import android.app.PendingIntent
-import android.app.TimePickerDialog
 import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.DialogInterface
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
@@ -16,7 +14,6 @@ import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
 import android.util.Log
-import android.widget.TimePicker
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.compose.material.DropdownMenuItem
@@ -37,7 +34,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -53,7 +49,6 @@ import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -64,8 +59,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TimePickerState
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -82,11 +75,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.ViewModel
@@ -96,11 +86,11 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.alarmtrial.ui.theme.AlarmTrialTheme
+import com.snorlabs.alarmtrial.R
+import com.snorlabs.alarmtrial.ui.theme.AlarmTrialTheme
 import kotlinx.coroutines.launch
 import java.time.LocalTime
 import java.util.Calendar
-import java.util.Locale
 
 
 class MainActivity : AppCompatActivity(), ConvertToMilliCallback {
@@ -120,7 +110,7 @@ class MainActivity : AppCompatActivity(), ConvertToMilliCallback {
 
     override fun onConversionComplete(totalMilli: Double) {
         Log.d("MainActivity", "Total Milliseconds: $totalMilli")
-        Toast.makeText(this, "Total Milliseconds: $totalMilli", Toast.LENGTH_LONG).show()
+        //Toast.makeText(this, "Total Milliseconds: $totalMilli", Toast.LENGTH_LONG).show()
 
         //Start the service and pass the totalMilli value
         val intent = Intent(this, CountdownTimer::class.java)
@@ -753,7 +743,7 @@ fun permissionChecker(
         == PackageManager.PERMISSION_GRANTED
     ) {
         dynBoolViewModel.permissionChecker = true
-        Toast.makeText(activity, "Permission Given", Toast.LENGTH_LONG).show()
+        //Toast.makeText(activity, "Permission Given", Toast.LENGTH_LONG).show()
     } else {
         Toast.makeText(activity, "Permission NOT GIVEN", Toast.LENGTH_LONG).show()
         //Opens up the cancel alarm activity for user. Service remains until closed.

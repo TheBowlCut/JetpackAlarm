@@ -1,11 +1,10 @@
-package com.example.alarmtrial
+package com.snorlabs.alarmtrial
 
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -25,8 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import com.example.alarmtrial.ui.theme.AlarmTrialTheme
+import com.snorlabs.alarmtrial.ui.theme.AlarmTrialTheme
 
 class PermissionChecker: ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
