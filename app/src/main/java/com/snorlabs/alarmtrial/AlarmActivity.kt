@@ -21,11 +21,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.snorlabs.alarmtrial.ui.theme.AlarmTrialTheme
 import java.util.Calendar
 
@@ -45,6 +51,12 @@ class AlarmActivity : ComponentActivity() {
     @Composable
     fun AlarmContent(activity: ComponentActivity) {
 
+        var snoozeAlarm: SnoozedAlarm = viewModel()
+
+        var snoozeBoolean by remember {
+            snoozeAlarm::snoozeBool
+        }
+
         Box(
             modifier = Modifier
                 .padding(16.dp)
@@ -59,11 +71,19 @@ class AlarmActivity : ComponentActivity() {
 
                 Spacer(modifier = Modifier.padding(52.dp))
 
-                Text(
-                    text = "Wake Up!",
-                    style = MaterialTheme.typography.displayMedium,
-                    textAlign = TextAlign.Center
-                )
+                if(!snoozeBoolean) {
+                    Text(
+                        text = "Wake Up!",
+                        style = MaterialTheme.typography.displayMedium,
+                        textAlign = TextAlign.Center
+                    )
+                } else {
+                    Text(
+                        text = "Alarm Snoozed",
+                        style = MaterialTheme.typography.displayMedium,
+                        textAlign = TextAlign.Center
+                    )
+                }
 
                 Spacer(modifier = Modifier.padding(24.dp))
 
@@ -88,6 +108,7 @@ class AlarmActivity : ComponentActivity() {
                 // Snooze Alarm
                 Button(
                     onClick = {
+                        snoozeBoolean = true
                         snoozeAlarm(activity)
                     }
                 ) {
@@ -183,4 +204,8 @@ class AlarmActivity : ComponentActivity() {
         // Set new alarm
         setAlarm(context, hourOfDay, minute)
     }
+}
+
+class SnoozedAlarm : ViewModel() {
+    var snoozeBool: Boolean by  mutableStateOf(false)
 }
