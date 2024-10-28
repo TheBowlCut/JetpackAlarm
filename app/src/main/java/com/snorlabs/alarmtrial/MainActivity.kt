@@ -249,20 +249,16 @@ fun AlarmNavigation(navController:NavHostController, activity: AppCompatActivity
     // Navigation controller function - allows bottom nav functionality
     // Retrieve or create the AlarmViewModel and booleanViewModel to save alarm
     val alarmViewModel: AlarmViewModel = viewModel()
-    val regBoolViewModel: ABoolViewModel = viewModel()
 
     // Retrieve or create the DynamicViewModel and booleanViewModel to save alarm
     val dynViewModel: DynamicViewModel = viewModel()
-    val dynBoolViewModel: DBoolViewModel = viewModel()
 
     NavHost(navController = navController, startDestination = "alarm"){
         // Whatever goes in here will be considered the home screen
         composable("alarm") {
             AlarmScreen(activity = activity,
                 alarmViewModel,
-                regBoolViewModel,
                 dynViewModel,
-                dynBoolViewModel
             )
         }
 
@@ -281,23 +277,21 @@ fun AlarmNavigation(navController:NavHostController, activity: AppCompatActivity
 @Composable
 fun AlarmScreen(activity: AppCompatActivity,
                 alarmViewModel: AlarmViewModel,
-                regBoolViewModel: ABoolViewModel,
                 dynamicViewModel: DynamicViewModel,
-                dynBoolViewModel: DBoolViewModel
     ){
 
     val pagerState = rememberPagerState(pageCount = { 3 })
     val scope = rememberCoroutineScope()
 
 
-    if (dynBoolViewModel.dynAlarmSet) {
+    if (dynamicViewModel.dynAlarmSet) {
         LaunchedEffect(Unit){
         scope.launch {
             pagerState.animateScrollToPage(1)
             }
         }
     }
-    if (regBoolViewModel.regAlarmSet) {
+    if (alarmViewModel.regAlarmSet) {
         LaunchedEffect(Unit){
             scope.launch {
                 pagerState.animateScrollToPage(2)
@@ -305,11 +299,11 @@ fun AlarmScreen(activity: AppCompatActivity,
         }
     }
 
-    if (dynBoolViewModel.cancelAll) {
+    if (dynamicViewModel.cancelAll) {
         LaunchedEffect(Unit){
             scope.launch {
                 pagerState.animateScrollToPage(0)
-                dynBoolViewModel.cancelAll = false
+                dynamicViewModel.cancelAll = false
             }
         }
     }
@@ -330,22 +324,17 @@ fun AlarmScreen(activity: AppCompatActivity,
 
                 0 -> DynamicAlarmScreen(
                     dynamicViewModel,
-                    dynBoolViewModel,
-                    regBoolViewModel,
                     activity
                 )
 
                 1 -> RegularAlarmScreen(
                     activity = activity,
                     alarmViewModel,
-                    regBoolViewModel,
-                    dynBoolViewModel
+                    dynamicViewModel
                 )
 
                 2 -> SleepScreen(
                     activity,
-                    regBoolViewModel,
-                    dynBoolViewModel,
                     dynamicViewModel,
                     alarmViewModel
                 )
@@ -380,8 +369,6 @@ fun AlarmScreen(activity: AppCompatActivity,
 @Composable
 fun DynamicAlarmScreen(
     dynViewModel: DynamicViewModel,
-    dynBoolViewModel: DBoolViewModel,
-    regBoolViewModel: ABoolViewModel,
     activity: AppCompatActivity
 ) {
 
@@ -394,15 +381,15 @@ fun DynamicAlarmScreen(
     }
 
     var dynAlarmSet by remember {
-        dynBoolViewModel::dynAlarmSet
+        dynViewModel::dynAlarmSet
     }
 
     var permissionBool by remember {
-        dynBoolViewModel::permissionChecker
+        dynViewModel::permissionChecker
     }
 
     var powerModeBool by remember {
-        dynBoolViewModel::powerModeChecker
+        dynViewModel::powerModeChecker
     }
 
     Column(
@@ -451,11 +438,11 @@ fun DynamicAlarmScreen(
             Button(
                 onClick = {
                     // First check if permission is granted for Activity Recognition
-                    permissionChecker(activity,dynBoolViewModel)
+                    permissionChecker(activity,dynViewModel)
 
                     if(permissionBool) {
 
-                        powerModeCheck(activity,dynBoolViewModel)
+                        powerModeCheck(activity,dynViewModel)
 
                         if(powerModeBool){
                         selectedCntDown = String.format("%02d:%02d", hour, minute)
@@ -481,8 +468,7 @@ fun DynamicAlarmScreen(
 fun RegularAlarmScreen(
     activity: AppCompatActivity,
     alarmViewModel: AlarmViewModel,
-    regBoolViewModel: ABoolViewModel,
-    dynBoolViewModel: DBoolViewModel
+    dynViewModel: DynamicViewModel
 ) {
 
     val currentTime = Calendar.getInstance()
@@ -493,7 +479,7 @@ fun RegularAlarmScreen(
     }
 
     var regAlarmSet by remember {
-        regBoolViewModel::regAlarmSet
+        alarmViewModel::regAlarmSet
     }
 
     val timePickerState = remember {
@@ -570,8 +556,6 @@ fun RegularAlarmScreen(
 @Composable
 fun SleepScreen(
     activity: AppCompatActivity,
-    regBoolViewModel: ABoolViewModel,
-    dynBoolViewModel: DBoolViewModel,
     dynViewModel: DynamicViewModel,
     alarmViewModel: AlarmViewModel
 ) {
@@ -666,7 +650,7 @@ fun SleepScreen(
 
             Button(
                 onClick = {
-                    cancelAlarm(activity,dynBoolViewModel,regBoolViewModel)
+                    cancelAlarm(activity,dynViewModel,alarmViewModel)
                 },
                 modifier = Modifier
                     .padding(bottom = 36.dp)
@@ -703,8 +687,8 @@ fun SettingsScreen() {
 //Cancel alarm
 fun cancelAlarm (
     context: Context,
-    dynBoolViewModel: DBoolViewModel,
-    regBoolViewModel: ABoolViewModel
+    dynBoolViewModel: DynamicViewModel,
+    regBoolViewModel: AlarmViewModel
 ){
 
     dynBoolViewModel.dynAlarmSet = false
@@ -736,7 +720,7 @@ fun cancelAlarm (
 
 fun permissionChecker(
     activity: AppCompatActivity,
-    dynBoolViewModel: DBoolViewModel) {
+    dynBoolViewModel: DynamicViewModel) {
 
     if(ContextCompat.checkSelfPermission
             (activity, Manifest.permission.ACTIVITY_RECOGNITION)
@@ -758,7 +742,7 @@ fun permissionChecker(
 
 fun powerModeCheck(
     activity: AppCompatActivity,
-    dynBoolViewModel: DBoolViewModel) {
+    dynBoolViewModel: DynamicViewModel) {
 
     val powerManager = activity.getSystemService(Context.POWER_SERVICE) as PowerManager?
     val powerSaveMode = powerManager?.isPowerSaveMode ?: false
@@ -867,24 +851,16 @@ fun DropdownMenuPicker(
 // View Model to store the user selected regular alarm time.
 class AlarmViewModel : ViewModel() {
     var regAlarmTime: String by mutableStateOf(LocalTime.NOON.toString())
-}
-
-class ABoolViewModel : ViewModel() {
     var regAlarmSet: Boolean by  mutableStateOf(false)
 }
 
 class DynamicViewModel : ViewModel() {
     var dynAlarmTime: String by mutableStateOf("08:00:00")
-}
-
-class DBoolViewModel : ViewModel() {
     var dynAlarmSet: Boolean by  mutableStateOf(false)
     var permissionChecker: Boolean by mutableStateOf(false)
     var powerModeChecker: Boolean by mutableStateOf(false)
     // currentPage state to reset when cancel button pressed
     var cancelAll: Boolean by  mutableStateOf(false)
-
 }
-
 
 
