@@ -72,6 +72,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Alignment.Companion.TopCenter
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -283,7 +284,6 @@ fun AlarmScreen(activity: AppCompatActivity,
     val pagerState = rememberPagerState(pageCount = { 3 })
     val scope = rememberCoroutineScope()
 
-
     if (dynamicViewModel.dynAlarmSet) {
         LaunchedEffect(Unit){
         scope.launch {
@@ -322,7 +322,8 @@ fun AlarmScreen(activity: AppCompatActivity,
         ) { page ->
             when (page) {
 
-                0 -> DynamicAlarmScreen(
+                0 ->
+                    DynamicAlarmScreen(
                     dynamicViewModel,
                     activity
                 )
@@ -355,12 +356,15 @@ fun AlarmScreen(activity: AppCompatActivity,
                     Color.Gray
                 }
                 Spacer(modifier = Modifier.size(8.dp)) // Spacer to create space between indicators
-                Box(
-                    modifier = Modifier
-                        .size(16.dp)
-                        .clip(CircleShape)
-                        .background(color)
-                )
+
+                if (pagerState.currentPage != 2 ) {
+                    Box(
+                        modifier = Modifier
+                            .size(16.dp)
+                            .clip(CircleShape)
+                            .background(color)
+                    )
+                }
             }
         }
     }
