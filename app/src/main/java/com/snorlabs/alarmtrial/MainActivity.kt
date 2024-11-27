@@ -185,10 +185,6 @@ fun AlarmTrialLayout(activity: AppCompatActivity) {
     )
 
     Scaffold(
-       
-        //topBar = {
-        //    HeaderComponent()
-        //},
 
         bottomBar = {
             NavigationBar(
@@ -281,17 +277,27 @@ fun AlarmScreen(activity: AppCompatActivity,
                 dynamicViewModel: DynamicViewModel,
     ){
 
-    val pagerState = rememberPagerState(pageCount = { 3 })
+    //val pagerState = rememberPagerState(pageCount = { 3 })
+
+    val pagerState = rememberPagerState(
+        initialPage = alarmViewModel.pageState,
+        pageCount = {3}
+    )
+
+    LaunchedEffect(pagerState.currentPage) { // New lines
+        alarmViewModel.pageState = pagerState.currentPage // Update ViewModel on page change
+    }
+
     val scope = rememberCoroutineScope()
 
-    if (dynamicViewModel.dynAlarmSet) {
+    if (dynamicViewModel.dynAlarmSet && !alarmViewModel.regAlarmSet) {
         LaunchedEffect(Unit){
         scope.launch {
             pagerState.animateScrollToPage(1)
             }
         }
     }
-    if (alarmViewModel.regAlarmSet) {
+    if (dynamicViewModel.dynAlarmSet && alarmViewModel.regAlarmSet) {
         LaunchedEffect(Unit){
             scope.launch {
                 pagerState.animateScrollToPage(2)
@@ -542,7 +548,6 @@ fun RegularAlarmScreen(
                         regAlarmTime = "%02d:%02d".format(hour, minute)
                         regAlarmSet = !regAlarmSet
                         setAlarm(activity, hour, minute)
-
                     },
                     modifier = Modifier
                         .padding(bottom = 36.dp)
@@ -854,6 +859,7 @@ fun DropdownMenuPicker(
 
 // View Model to store the user selected regular alarm time.
 class AlarmViewModel : ViewModel() {
+    var pageState: Int by mutableStateOf(0) // tracks the page and supports better back navigation.
     var regAlarmTime: String by mutableStateOf(LocalTime.NOON.toString())
     var regAlarmSet: Boolean by  mutableStateOf(false)
 }
