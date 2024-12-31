@@ -183,9 +183,7 @@ fun AlarmTrialLayout(activity: AppCompatActivity) {
             hasNews = false
         )
     )
-
     Scaffold(
-
         bottomBar = {
             NavigationBar(
                 modifier = Modifier
@@ -235,9 +233,7 @@ fun AlarmTrialLayout(activity: AppCompatActivity) {
             .padding(innerPadding)) {
             AlarmNavigation(navController = navController, activity = activity)
         }
-
     }
-
 }
 
 @Composable

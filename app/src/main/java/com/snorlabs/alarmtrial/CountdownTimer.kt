@@ -2,6 +2,7 @@ package com.snorlabs.alarmtrial
 
 import android.annotation.SuppressLint
 import android.app.Notification
+import android.app.Notification.*
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -10,9 +11,11 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.os.Build
 import android.os.CountDownTimer
 import android.os.IBinder
 import android.util.Log
+import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.gms.location.ActivityRecognition
 import com.google.android.gms.location.SleepClassifyEvent
@@ -64,20 +67,34 @@ class CountdownTimer : Service() {
 
         registerReceiver(sleepReceiver, intentFilter)
 
-        val CHANNELID = "Foreground Service ID"
-        val channel = NotificationChannel(
-            CHANNELID,
-            CHANNELID,
-            NotificationManager.IMPORTANCE_LOW
+        // Intent to launch app when pressed.
+        val appIntent = Intent(applicationContext, MainActivity::class.java)
+        appIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                Intent.FLAG_ACTIVITY_SINGLE_TOP)
+
+        val alarmPendingIntent = PendingIntent.getActivity(
+            applicationContext,
+            3,
+            appIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT
+                    or PendingIntent.FLAG_IMMUTABLE
         )
 
+       val CHANNELID = "Foreground Service ID"
+       val channel = NotificationChannel(
+           CHANNELID,
+           CHANNELID,
+           NotificationManager.IMPORTANCE_LOW
+       )
+
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
-        val notification: Notification.Builder = Notification.Builder(this, CHANNELID)
+        val notification: Builder = Builder(this, CHANNELID)
             .setContentText("SnorLabs Running")
             .setContentTitle("SnorLabs")
             .setSmallIcon(R.drawable.snorlabs_icon_aug2023_512)
+            .setContentIntent(alarmPendingIntent)
 
-        startForeground(2, notification.build())
+        startForeground(3, notification.build())
 
     }
 
@@ -233,9 +250,11 @@ class CountdownTimer : Service() {
             }
 
             override fun onFinish() {
+
                 val alarmIntent = Intent(applicationContext, AlarmService::class.java).apply {
                     putExtra("NotificationMessage", "Test")
                 }
+
                 context.startService(alarmIntent)
                 stopSelf()
             }
@@ -283,6 +302,7 @@ class CountdownTimer : Service() {
 
     override fun onDestroy() {
         Log.d(TAG,"onDestroy Timer")
+
         countDownTimer?.cancel()  // Cancel the countdown when the service is destroyed
 
         // Unregister the receiver only if it has been initialized

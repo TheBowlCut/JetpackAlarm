@@ -143,29 +143,6 @@ class AlarmActivity : ComponentActivity() {
 
         context.stopService(serviceIntent)
 
-        // Cancels the pending intent of regular alarm if dynamic goes off
-        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-
-        // Create pending intent with same name and requestCode to cancel.
-        val alarmIntent = Intent(context, AlarmReceiver::class.java).apply {
-            putExtra("NotificationMessage", "Test")
-        }
-
-        val alarmPendingintent = PendingIntent
-            .getBroadcast(
-                context,
-                0,
-                alarmIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-
-        alarmManager.cancel(alarmPendingintent)
-
-        // Cancels the Countdown Service if regular alarm goes off
-        // Stop the countdown service
-        val intent = Intent(context, CountdownTimer::class.java)
-        context.stopService(intent)
-
         //Close Notification
         val notificationManager =
             context?.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
